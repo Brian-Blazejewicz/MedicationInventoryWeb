@@ -1,0 +1,115 @@
+
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+header h1 {
+  color: #2563eb;
+  font-size: 36px;
+}
+
+header p {
+  color: #64748b;
+  font-size: 18px;
+}
+
+main h2 {
+  margin-bottom: 24px;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.card {
+  background: #f1f5f9;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+  color: #334155;
+}
+
+.card p {
+  font-size: 32px;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+footer {
+  text-align: center;
+  margin-top: 60px;
+  color: #64748b;
+}
+
+@media (max-width: 700px) {
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.medication-section {
+  margin-top: 48px;
+}
+
+.medication-section label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.medication-section input {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.medication-section input:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.medication-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.medication-section th,
+.medication-section td {
+  padding: 14px;
+  text-align: left;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.medication-section th {
+  background-color: #e2e8f0;
+  color: #1e293b;
+}
+
+.medication-section td {
+  color: #334155;
+}
+
+.medication-section tr:hover {
+  background-color: #f1f5f9;
+}
