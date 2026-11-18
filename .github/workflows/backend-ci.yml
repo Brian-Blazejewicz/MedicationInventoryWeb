@@ -56,4 +56,6 @@ jobs:
         run: python -m alembic upgrade head
 
       - name: Run backend tests
+        env:
+          JWT_SECRET_KEY: "ci-only-jwt-signing-key-not-for-production-2026"
         run: python -m pytest -v
