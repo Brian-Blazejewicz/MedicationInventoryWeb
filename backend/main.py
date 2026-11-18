@@ -1,16 +1,18 @@
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import SessionLocal
+
 from models import (
     Medication as MedicationDB,
     InventoryTransaction as InventoryTransactionDB,
+    User as UserDB,
 )
 
 from schemas import (
@@ -18,7 +20,15 @@ from schemas import (
     MedicationResponse,
     InventoryTransactionCreate,
     InventoryTransactionResponse,
+    UserCreate,
+    UserLogin,
+    UserResponse,
 )
+
+from security import hash_password, verify_password
+from auth import create_access_token, verify_access_token
+from jwt.exceptions import InvalidTokenError
+
 
 
 app = FastAPI(
@@ -73,6 +83,127 @@ def get_db():
         db.close()
 
 
+# Require a Bearer token for protected endpoints.
+bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(
+        bearer_scheme
+    ),
+    db: Session = Depends(get_db),
+) -> UserDB:
+    """Validate a JWT and retrieve the authenticated user."""
+
+    authentication_error = HTTPException(
+        status_code=401,
+        detail="Invalid or missing authentication credentials.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if credentials is None:
+        raise authentication_error
+
+    try:
+        user_id = verify_access_token(credentials.credentials)
+    except (InvalidTokenError, ValueError):
+        raise authentication_error
+
+    user = db.get(UserDB, user_id)
+
+    if user is None or not user.is_active:
+        raise authentication_error
+
+    return user
+
+
+@app.post(
+    "/api/auth/register",
+    response_model=UserResponse,
+    status_code=201,
+)
+def register_user(
+    user_data: UserCreate,
+    db: Session = Depends(get_db),
+):
+    # Normalize the email address.
+    email = user_data.email.strip().lower()
+
+    # Check whether the email is already registered.
+    existing_user = db.scalar(
+        select(UserDB).where(UserDB.email == email)
+    )
+
+    if existing_user:
+        raise HTTPException(
+            status_code=409,
+            detail="An account with this email already exists.",
+        )
+
+    # Hash the password before storing it.
+    new_user = UserDB(
+        email=email,
+        hashed_password=hash_password(user_data.password),
+    )
+
+    db.add(new_user)
+
+    try:
+        db.commit()
+        db.refresh(new_user)
+
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="An account with this email already exists.",
+        )
+
+    return new_user
+
+@app.post("/api/auth/login")
+def login_user(
+    user_data: UserLogin,
+    db: Session = Depends(get_db),
+):
+    email = user_data.email.strip().lower()
+
+    user = db.scalar(
+        select(UserDB).where(UserDB.email == email)
+    )
+
+    if user is None or not verify_password(
+        user_data.password,
+        user.hashed_password,
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail="This account is inactive.",
+        )
+
+    access_token = create_access_token(user.id)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
+
+
+@app.get("/api/auth/me", response_model=UserResponse)
+def get_my_profile(
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Return the currently authenticated user's profile."""
+    return current_user
+
+
 @app.get("/")
 def home():
     return {
@@ -95,7 +226,9 @@ def health_check():
 )
 def get_medications(
     db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
 ):
+
     medications = (
         db.query(MedicationDB)
         .order_by(MedicationDB.id)
@@ -110,10 +243,13 @@ def get_medications(
     response_model=MedicationResponse,
     status_code=201,
 )
+
 def create_medication(
     medication: MedicationCreate,
     db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
 ):
+
     new_medication = MedicationDB(
         **medication.model_dump()
     )
@@ -137,10 +273,13 @@ def create_medication(
     "/api/medications/{medication_id}",
     response_model=MedicationResponse,
 )
+
 def get_medication_by_id(
     medication_id: int,
     db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
 ):
+
     medication = db.get(MedicationDB, medication_id)
 
     if medication is None:
@@ -160,7 +299,9 @@ def update_medication(
     medication_id: int,
     updated_data: MedicationCreate,
     db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
 ):
+
     medication = db.get(MedicationDB, medication_id)
 
     if medication is None:
@@ -191,7 +332,9 @@ def update_medication(
 def delete_medication(
     medication_id: int,
     db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
 ):
+
     medication = db.get(MedicationDB, medication_id)
 
     if medication is None:
@@ -210,10 +353,13 @@ def delete_medication(
     "/api/medications/{medication_id}/transactions",
     response_model=list[InventoryTransactionResponse],
 )
+
 def get_medication_transactions(
     medication_id: int,
     db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
 ):
+
     # Confirm that the medication exists.
     medication = db.get(MedicationDB, medication_id)
 
@@ -244,11 +390,14 @@ def get_medication_transactions(
     response_model=InventoryTransactionResponse,
     status_code=201,
 )
+
 def stock_in(
     medication_id: int,
     transaction_data: InventoryTransactionCreate,
     db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
 ):
+
     try:
         # Lock the medication row until the transaction finishes.
         medication = db.execute(
@@ -297,11 +446,14 @@ def stock_in(
     response_model=InventoryTransactionResponse,
     status_code=201,
 )
+
 def stock_out(
     medication_id: int,
     transaction_data: InventoryTransactionCreate,
     db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
 ):
+
     try:
         # Lock the medication row to prevent concurrent
         # stock operations from corrupting the quantity.

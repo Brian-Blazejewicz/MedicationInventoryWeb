@@ -14,7 +14,7 @@ from models import (
 client = TestClient(app)
 
 
-def test_stock_in_success():
+def test_stock_in_success(authenticated_user):
     # Create a fictional medication in memory.
     medication = MedicationDB(
         id=1,
@@ -84,7 +84,7 @@ def test_stock_in_success():
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_stock_out_success():
+def test_stock_out_success(authenticated_user):
     # Create a fictional medication with 125 units.
     medication = MedicationDB(
         id=1,
@@ -155,7 +155,7 @@ def test_stock_out_success():
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_stock_out_insufficient_inventory():
+def test_stock_out_insufficient_inventory(authenticated_user):
     # Create a fictional medication with only 10 units.
     medication = MedicationDB(
         id=1,
@@ -207,7 +207,7 @@ def test_stock_out_insufficient_inventory():
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_stock_in_zero_quantity():
+def test_stock_in_zero_quantity(authenticated_user):
     response = client.post(
         "/api/medications/1/stock-in",
         json={"quantity": 0},
@@ -223,7 +223,7 @@ def test_stock_in_zero_quantity():
     )
 
 
-def test_stock_out_negative_quantity():
+def test_stock_out_negative_quantity(authenticated_user):
     response = client.post(
         "/api/medications/1/stock-out",
         json={"quantity": -5},
@@ -238,7 +238,7 @@ def test_stock_out_negative_quantity():
         for error in errors
     )
 
-def test_stock_in_medication_not_found():
+def test_stock_in_medication_not_found(authenticated_user):
     fake_db = MagicMock()
 
     # Simulate a database query that finds no medication.
@@ -268,7 +268,7 @@ def test_stock_in_medication_not_found():
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_stock_out_medication_not_found():
+def test_stock_out_medication_not_found(authenticated_user):
     fake_db = MagicMock()
 
     # Simulate a database query that finds no medication.
@@ -298,7 +298,7 @@ def test_stock_out_medication_not_found():
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_get_medication_transaction_history():
+def test_get_medication_transaction_history(authenticated_user):
     # Create a fictional medication.
     medication = MedicationDB(
         id=1,
@@ -376,7 +376,7 @@ def test_get_medication_transaction_history():
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-def test_stock_in_database_failure_rolls_back():
+def test_stock_in_database_failure_rolls_back(authenticated_user):
     # Create a fictional medication.
     medication = MedicationDB(
         id=1,
@@ -439,7 +439,7 @@ def test_stock_in_database_failure_rolls_back():
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-def test_stock_out_database_failure_rolls_back():
+def test_stock_out_database_failure_rolls_back(authenticated_user):
     # Create a fictional medication with 100 units.
     medication = MedicationDB(
         id=1,

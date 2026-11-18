@@ -16,7 +16,7 @@ from models import (
 from tests.test_database import create_test_engine
 
 
-def test_postgres_stock_in():
+def test_postgres_stock_in(authenticated_user):
     # Connect only to the dedicated PostgreSQL test database.
     engine = create_test_engine()
 
@@ -120,7 +120,7 @@ def test_postgres_stock_in():
 
         engine.dispose()
 
-def test_postgres_stock_out():
+def test_postgres_stock_out(authenticated_user):
     # Connect only to the dedicated PostgreSQL test database.
     engine = create_test_engine()
 
@@ -223,7 +223,7 @@ def test_postgres_stock_out():
 
         engine.dispose()
 
-def test_postgres_stock_out_insufficient_inventory():
+def test_postgres_stock_out_insufficient_inventory(authenticated_user):
     # Connect only to the dedicated test database.
     engine = create_test_engine()
 
@@ -433,7 +433,7 @@ def test_postgres_transaction_rollback():
 
         engine.dispose()
 
-def test_postgres_transaction_history():
+def test_postgres_transaction_history(authenticated_user):
     # Connect only to the dedicated PostgreSQL test database.
     engine = create_test_engine()
     medication_id = None
@@ -563,7 +563,7 @@ def test_postgres_transaction_history():
 
         engine.dispose()
 
-def test_postgres_concurrent_stock_out():
+def test_postgres_concurrent_stock_out(authenticated_user):
     # Connect only to medication_inventory_test.
     engine = create_test_engine()
 

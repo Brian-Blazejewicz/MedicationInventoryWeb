@@ -24,7 +24,7 @@ def test_root_endpoint():
     assert isinstance(response.json(), dict)
 
 
-def test_get_medications():
+def test_get_medications(authenticated_user):
     fake_db = MagicMock()
 
     fake_db.query.return_value.order_by.return_value.all.return_value = []
@@ -44,7 +44,7 @@ def test_get_medications():
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_get_medication_not_found():
+def test_get_medication_not_found(authenticated_user):
     fake_db = MagicMock()
     fake_db.get.return_value = None
 
@@ -70,7 +70,7 @@ def test_get_medication_not_found():
 
 
 
-def test_get_medication_by_id():
+def test_get_medication_by_id(authenticated_user):
     from datetime import date
 
     fake_db = MagicMock()
@@ -112,7 +112,7 @@ def test_get_medication_by_id():
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_create_medication():
+def test_create_medication(authenticated_user):
     fake_db = MagicMock()
 
     def fake_refresh(medication):
@@ -161,7 +161,7 @@ def test_create_medication():
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-def test_create_medication_invalid_ndc():
+def test_create_medication_invalid_ndc(authenticated_user):
     medication_data = {
         "name": "Ibuprofen 200 mg",
         "brand": "Test Brand",
@@ -185,7 +185,7 @@ def test_create_medication_invalid_ndc():
         for error in errors
     )
 
-def test_create_medication_negative_quantity():
+def test_create_medication_negative_quantity(authenticated_user):
     medication_data = {
         "name": "Ibuprofen 200 mg",
         "brand": "Test Brand",
@@ -209,7 +209,7 @@ def test_create_medication_negative_quantity():
         for error in errors
     )
 
-def test_create_duplicate_medication():
+def test_create_duplicate_medication(authenticated_user):
     fake_db = MagicMock()
 
     fake_db.commit.side_effect = IntegrityError(
@@ -249,7 +249,7 @@ def test_create_duplicate_medication():
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-def test_update_medication():
+def test_update_medication(authenticated_user):
     from datetime import date
 
     fake_db = MagicMock()
@@ -307,7 +307,7 @@ def test_update_medication():
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-def test_update_medication_not_found():
+def test_update_medication_not_found(authenticated_user):
     fake_db = MagicMock()
     fake_db.get.return_value = None
 
@@ -347,7 +347,7 @@ def test_update_medication_not_found():
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-def test_update_medication_duplicate_conflict():
+def test_update_medication_duplicate_conflict(authenticated_user):
     from datetime import date
 
     fake_db = MagicMock()
@@ -410,7 +410,7 @@ def test_update_medication_duplicate_conflict():
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-def test_delete_medication():
+def test_delete_medication(authenticated_user):
     from datetime import date
 
     fake_db = MagicMock()
@@ -451,7 +451,7 @@ def test_delete_medication():
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-def test_delete_medication_not_found():
+def test_delete_medication_not_found(authenticated_user):
     fake_db = MagicMock()
     fake_db.get.return_value = None
 
@@ -481,7 +481,7 @@ def test_delete_medication_not_found():
     finally:
         app.dependency_overrides.pop(get_db, None)
 
-def test_create_medication_missing_name():
+def test_create_medication_missing_name(authenticated_user):
     medication_data = {
         "brand": "Test Brand",
         "ndc": "00000000004",
